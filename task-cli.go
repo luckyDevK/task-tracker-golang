@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -18,78 +20,97 @@ const (
 
 
 type Task struct {
-	id int64
-	Description string `description:"desc"`
-	Status Status `json:"status"`
-	createdAt time.Time 
-	UpdatedAt time.Time `json:"updated_at"`
+    Id          int64  `json:"id"`
+    Description string `json:"description"`
+    Status      Status `json:"status"`
+    CreatedAt   string `json:"created_at"`
+    UpdatedAt   string `json:"updated_at"`
 }
 
 
 
-
-func NewTask(desc string, status Status) Task  {
-	now := time.Now()
+func NewTask(desc string, status Status) Task {
+	nowFormatted := time.Now().Format(time.RFC3339)
 
 	newTask := Task{
-		id: time.Now().UnixNano(),
+		Id:          time.Now().Unix(),
 		Description: desc,
-		Status: status,
-		createdAt: now,
-		UpdatedAt: now,
+		Status:      status,
+		CreatedAt:   nowFormatted,
+		UpdatedAt:   nowFormatted,
 	}
+
+	fmt.Printf("Task added successfully ID: %v\n", newTask.Id)
 
 	return newTask
 }
 
-func (t Task) MarshalJSON() ([]byte, error)  {
-	type Alias Task
 
-	return json.Marshal(&struct {
-		ID int64 `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		Alias
-	}{
-		ID: t.id,
-		CreatedAt: t.createdAt,
-		Alias: (Alias)(t),
-	})
+// func (t *Task) UnmarshalJSON(data []byte) error  {
+// 	type Alias Task
+
+// 	aux := &struct {
+//         ID        int64  `json:"id"`
+//         CreatedAt string `json:"created_at"`
+//         *Alias
+//     }{
+//         Alias: (*Alias)(t),
+//     }
+
+// 	if err := json.Unmarshal(data, aux); err != nil{
+// 		return err
+// 	}
+
+// 	t.Id = aux.ID
+// 	t.CreatedAt = aux.CreatedAt
+//     return nil
+// }
+
+func storeToJsonFile(newTask Task)  {
+	var allTask []Task
+	
+	file, err := os.ReadFile("tasks.json")
+
+
+	if err == nil {
+		json.Unmarshal(file, &allTask)
+	}
+
+	allTask = append(allTask, newTask)
+
+
+	data, err := json.MarshalIndent(allTask, "", "  ")
+	
+	if err != nil {
+		fmt.Printf("Error marshaling JSON: %v\n", err)
+		return
+	}
+	err = os.WriteFile("tasks.json", data, 0644)
+
+	if err != nil {
+        log.Fatal(err)
+    }
 }
 
 
 
 func main()  {
-	taskOne := NewTask("solo", Todo)
-	
-
-	data, _ := json.MarshalIndent(taskOne, "", "  ")
-
-	
-	fmt.Println(string(data))
 	reader := bufio.NewReader(os.Stdin)
 	
-	fmt.Print("Enter your name: ")
-	name, err := reader.ReadString('\n')
+	fmt.Print("Enter task: ")
+	desc, err := reader.ReadString('\n')
 
 	if err != nil {
-		fmt.Println("error when enter u name")
+		fmt.Printf("Error enter task: %v\n", err)
+		return
 	}
 
-	fmt.Println("Hello", name)
+	desc = strings.TrimSpace(desc)
+	newTask := NewTask(desc, InProgress)
+	
+	fmt.Println(newTask, "newTask")
 
-	// user := User{
-	// 	Name:  "Jane Smith",
-	// 	Email: "jane.smith@example.com",
-	// 	Age:   25,
-	// }
-
-	// jsonData, err := json.MarshalIndent(user, "", "  ")
-	// if err != nil {
-	// 	fmt.Printf("Error marshaling JSON: %v\n", err)
-	// 	return
-	// }
-
-	// file, err := os.Create("user.json")
+	storeToJsonFile(newTask)
 	
 
 	// if err != nil {
