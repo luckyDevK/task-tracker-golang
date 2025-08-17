@@ -5,6 +5,12 @@ Task Tracker is a simple command-line interface (CLI) application built in Go to
 
 ---
 
+## Project URL
+
+```bash
+https://roadmap.sh/projects/task-tracker
+```
+
 ## Features
 
 - Add new tasks
